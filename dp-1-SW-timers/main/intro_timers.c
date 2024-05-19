@@ -1,6 +1,6 @@
 /*
  * Dp-1-SW-TIMERS
- * Basic introduction to timers in FreeRTOS
+ * Introduction to timers in FreeRTOS
  * author: Venkata Naga Ravikiran Bulusu
  *
  */
