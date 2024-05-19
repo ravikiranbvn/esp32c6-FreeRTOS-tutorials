@@ -43,7 +43,7 @@ void setupTimers(void) {
     // create one shot timer
     oneshot_xTimer = xTimerCreate(
                      "oneShotTimer",             // Name of timer
-                     pdMS_TO_TICKS(2000),      // Period of timer (in ticks)
+                     pdMS_TO_TICKS(2000),        // Period of timer (in ticks)
                      pdFALSE,                    // one-shot
                      (void *)0,                  // Timer ID
                      vTimerCbOneShot);           // Callback function

@@ -39,23 +39,16 @@ typedef struct {
     bool isRunning;                             // timer status
 } TimerManager_t;
 
-// headers
-void TimerManager_Init(TimerManager_t *tm, const char *name, TickType_t timer_period, TimerCallbackFunction_t callback, TimerType_t type);
-void TimerManager_Start(TimerManager_t *tm);
-void TimerManager_Stop(TimerManager_t *tm);
-void TimerManager_Reset(TimerManager_t *tm);
-uint32_t TimerManager_GetElapsedTime(TimerManager_t *tm);
-
-void TimerManager_Init(TimerManager_t *tm, const char *name, TickType_t timer_period, TimerCallbackFunction_t callback, TimerType_t type) {
+void TimerManager_Init(TimerManager_t *tm, const char *name, const uint32_t timer_period, TimerCallbackFunction_t callback, TimerType_t type) {
     tm->timer_name = name;
     tm->start_time = 0;
     tm->stop_time = 0;
     tm->elapsed_time_before_stop = 0;
     tm->isRunning = false;
     if (type == TIMER_TYPE_ONE_SHOT) {
-        tm->timer_handle = xTimerCreate(name, timer_period, pdFALSE, (void*)tm, callback);
+        tm->timer_handle = xTimerCreate(tm->timer_name, pdMS_TO_TICKS(timer_period), pdFALSE, (void*)tm, callback);
     } else {
-        tm->timer_handle = xTimerCreate(name, timer_period, pdTRUE, (void*)tm, callback);
+        tm->timer_handle = xTimerCreate(tm->timer_name, pdMS_TO_TICKS(timer_period), pdTRUE, (void*)tm, callback);
     }
 
     if (tm->timer_handle == NULL) {
@@ -88,13 +81,13 @@ void TimerManager_Stop(TimerManager_t *tm) {
 }
 
 void TimerManager_Reset(TimerManager_t *tm) {
+    ESP_LOGI(TAG, "Timer %s reset.", tm->timer_name);
     tm->start_time = 0;
     tm->stop_time = 0;
     tm->elapsed_time_before_stop = 0;
-    tm->timer_name = "";
-    tm->type = TIMER_TYPE_UNKNOWN;
     tm->isRunning = false;
-    ESP_LOGI(TAG, "Timer %s reset.", tm->timer_name);
+    tm->type = TIMER_TYPE_UNKNOWN;
+    tm->timer_name = "";
 }
 
 uint32_t TimerManager_GetElapsedTime(TimerManager_t *tm) {
@@ -106,8 +99,8 @@ uint32_t TimerManager_GetElapsedTime(TimerManager_t *tm) {
     }
 }
 
-void vTimerCbOneShot(TimerManager_t *tm, TimerHandle_t xTimer) {
-    ESP_LOGI(TAG, "Timer expired with type: %d", tm->type);
+void vTimerCb( TimerHandle_t xTimer) {
+    ESP_LOGI(TAG, "Timer expired!");
 }
 
 void printChipInfo(void) {
@@ -149,17 +142,22 @@ void app_main() {
 
     // timer manager
     TimerManager_t tm;
-    TimerManager_Init(&tm, "oneShotTimer", pdMS_TO_TICKS(5000), vTimerCbOneShot, TIMER_TYPE_ONE_SHOT);
+    TimerManager_Init(&tm, "periodicTimer", 3000, vTimerCb, TIMER_TYPE_PERIODIC);
 
     // trigger timer manager
     TimerManager_Start(&tm);
-    vTaskDelay(pdMS_TO_TICKS(2000));
+
+    // simulate
+    vTaskDelay(pdMS_TO_TICKS(1000));
+
+    // stop
     TimerManager_Stop(&tm);
 
     // print time elapsed
     uint32_t total_elapsed_time = TimerManager_GetElapsedTime(&tm);
     ESP_LOGI(TAG, "Total elapsed time: %" PRIu32 " milliseconds", total_elapsed_time);
-
     vTaskDelay(pdMS_TO_TICKS(100));
+
+    // reset
     TimerManager_Reset(&tm);
 }
