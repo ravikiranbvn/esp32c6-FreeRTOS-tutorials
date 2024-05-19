@@ -1,0 +1,99 @@
+typedef struct {
+    TimerHandle_t timer_handle;
+    uint32_t start_time;
+    uint32_t stop_time;
+    uint32_t elapsed_time_before_stop;
+    const char *timer_name;
+} TimerManager;
+
+
+void TimerManager_Init(TimerManager *tm, const char *name, TickType_t timer_period, TimerCallbackFunction_t callback);
+void TimerManager_Start(TimerManager *tm);
+void TimerManager_Stop(TimerManager *tm);
+void TimerManager_Reset(TimerManager *tm);
+uint32_t TimerManager_GetElapsedTime(TimerManager *tm);
+
+
+#include <stdio.h>
+#include <inttypes.h>
+#include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/timers.h"
+
+static const char *TAG = "timer_manager";
+
+void TimerManager_Init(TimerManager *tm, const char *name, TickType_t timer_period, TimerCallbackFunction_t callback) {
+    tm->timer_name = name;
+    tm->start_time = 0;
+    tm->stop_time = 0;
+    tm->elapsed_time_before_stop = 0;
+    tm->timer_handle = xTimerCreate(name, timer_period, pdFALSE, (void *)0, callback);
+    if (tm->timer_handle == NULL) {
+        ESP_LOGE(TAG, "Failed to create timer: %s", name);
+    }
+}
+
+void TimerManager_Start(TimerManager *tm) {
+    tm->start_time = esp_log_timestamp();
+    if (xTimerStart(tm->timer_handle, portMAX_DELAY) != pdPASS) {
+        ESP_LOGE(TAG, "Failed to start timer: %s", tm->timer_name);
+    } else {
+        ESP_LOGI(TAG, "Timer %s started at %" PRIu32 " milliseconds", tm->timer_name, tm->start_time);
+    }
+}
+
+void TimerManager_Stop(TimerManager *tm) {
+    if (xTimerStop(tm->timer_handle, portMAX_DELAY) != pdPASS) {
+        ESP_LOGE(TAG, "Failed to stop timer: %s", tm->timer_name);
+    } else {
+        tm->stop_time = esp_log_timestamp();
+        tm->elapsed_time_before_stop += tm->stop_time - tm->start_time;
+        ESP_LOGI(TAG, "Timer %s stopped at %" PRIu32 " milliseconds. Elapsed time: %" PRIu32 " milliseconds",
+                 tm->timer_name, tm->stop_time, tm->elapsed_time_before_stop);
+    }
+}
+
+void TimerManager_Reset(TimerManager *tm) {
+    tm->start_time = 0;
+    tm->stop_time = 0;
+    tm->elapsed_time_before_stop = 0;
+    ESP_LOGI(TAG, "Timer %s reset.", tm->timer_name);
+}
+
+uint32_t TimerManager_GetElapsedTime(TimerManager *tm) {
+    if (xTimerIsTimerActive(tm->timer_handle)) {
+        uint32_t current_time = esp_log_timestamp();
+        return tm->elapsed_time_before_stop + (current_time - tm->start_time);
+    } else {
+        return tm->elapsed_time_before_stop;
+    }
+}
+
+// Example usage with a one-shot timer callback function
+void vTimerCbOneShot(TimerHandle_t xTimer) {
+    ESP_LOGI(TAG, "One-shot timer expired.");
+}
+
+void app_main() {
+    TimerManager myTimer;
+    TimerManager_Init(&myTimer, "MyOneShotTimer", pdMS_TO_TICKS(5000), vTimerCbOneShot);
+
+    // Start the timer
+    TimerManager_Start(&myTimer);
+
+    // Simulate some delay before stopping the timer
+    vTaskDelay(pdMS_TO_TICKS(2000));
+    TimerManager_Stop(&myTimer);
+
+    // Simulate some delay before restarting the timer
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    TimerManager_Start(&myTimer);
+
+    // Simulate some delay before stopping the timer again
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    TimerManager_Stop(&myTimer);
+
+    // Get the total elapsed time
+    uint32_t total_elapsed_time = TimerManager_GetElapsedTime(&myTimer);
+    ESP_LOGI(TAG, "Total elapsed time: %" PRIu32 " milliseconds", total_elapsed_time);
+}
