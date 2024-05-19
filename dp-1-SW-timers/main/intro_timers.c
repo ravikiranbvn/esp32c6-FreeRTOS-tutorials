@@ -23,22 +23,19 @@ static const char *TAG = "DP-1-SW-TIMERS";
 static uint32_t one_shot_start_time;
 static uint32_t periodic_start_time;
 
-void vTimerCbOneShot(TimerHandle_t xTimer)
-{
+void vTimerCbOneShot(TimerHandle_t xTimer) {
     uint32_t end_time = esp_log_timestamp();
     uint32_t elapsed_time = end_time - one_shot_start_time;
     ESP_LOGI(TAG, "[%" PRIu32 "] one shot timer expired!", elapsed_time);
 }
 
-void vTimerCbPeriodic(TimerHandle_t xTimer)
-{
+void vTimerCbPeriodic(TimerHandle_t xTimer) {
    uint32_t end_time = esp_log_timestamp();
    uint32_t elapsed_time = end_time - periodic_start_time;
    ESP_LOGI(TAG, "[%" PRIu32 "] periodic timer expired!", elapsed_time);
 }
 
-void setupTimers(void)
-{
+void setupTimers(void) {
     // handles
     TimerHandle_t oneshot_xTimer;
     TimerHandle_t periodic_xTimer;
@@ -76,8 +73,7 @@ void setupTimers(void)
     }
 }
 
-void printChipInfo(void)
-{
+void printChipInfo(void) {
     printf("----------Printing chip information!----------\n");
     esp_chip_info_t chip_info;
     uint32_t flash_size;
@@ -104,8 +100,7 @@ void printChipInfo(void)
     printf("Minimum free heap size: %" PRIu32 " bytes\n", esp_get_minimum_free_heap_size());
 }
 
-void app_main(void)
-{
+void app_main(void) {
     // print chip info
     printChipInfo();
     
@@ -117,9 +112,4 @@ void app_main(void)
 
     // timer setup
     setupTimers();
-
-    // loop
-    for (;;) {
-        vTaskDelay(pdMS_TO_TICKS(100));
-    }
 }
