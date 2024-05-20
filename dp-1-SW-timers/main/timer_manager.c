@@ -88,6 +88,7 @@ void TimerManager_Reset(TimerManager_t *tm) {
     tm->isRunning = false;
     tm->type = TIMER_TYPE_UNKNOWN;
     tm->timer_name = "";
+    tm->timer_handle = NULL;
 }
 
 uint32_t TimerManager_GetElapsedTime(TimerManager_t *tm) {
